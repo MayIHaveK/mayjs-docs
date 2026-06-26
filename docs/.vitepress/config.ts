@@ -4,6 +4,7 @@ export default defineConfig({
   title: 'MayJS',
   description: '高性能 Minecraft JavaScript 引擎插件文档',
   lang: 'zh-CN',
+  base: '/mayjs-docs/',
 
   head: [
     ['link', { rel: 'icon', href: '/favicon.ico' }]
