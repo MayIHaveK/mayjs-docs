@@ -42,10 +42,10 @@ function main() {}
 | Nullish coalescing | `val ?? default` |
 | 逻辑赋值 | `a ??= 1; b \|\|= 2;` |
 
-::: warning 不支持
-- `async` / `await` / `Promise`
+::: warning 不建议使用
+- `async` / `await` — 语法可转译但 Nashorn 无原生 Promise，运行时可能异常
 - `import` / `export`（使用 `require` 代替）
-- Generator（`function*`）
+- Generator（`function*`）— 同上，运行时可能异常
 - `Symbol`、`Map`、`Set`（使用 Java 集合代替）
 :::
 
