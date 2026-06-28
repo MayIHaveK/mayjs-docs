@@ -34,10 +34,13 @@ function main() {}
 | 默认参数 | `function f(x = 1) {}` |
 | class | `class Foo extends Bar {}` |
 | 对象简写 | `{ name, age }` |
-| 展开运算符 | `{...obj}` |
+| 展开运算符 | `{...obj}` `[...arr]` |
 | for-of | `for (const item of list) {}` |
 | 计算属性 | `{ [key]: value }` |
 | 幂运算符 | `x ** 3` |
+| Optional chaining | `obj?.prop?.sub` |
+| Nullish coalescing | `val ?? default` |
+| 逻辑赋值 | `a ??= 1; b \|\|= 2;` |
 
 ::: warning 不支持
 - `async` / `await` / `Promise`
