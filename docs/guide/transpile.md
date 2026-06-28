@@ -50,12 +50,12 @@ function main() {}
 
 ```yaml
 script-engine:
-  transpile: manual   # auto / manual / off
+  transpile: auto   # auto / manual / off
 ```
 
 - `auto`：有 `//@es6` 注解的脚本自动转译运行
-- `manual`：仅通过命令手动转译（默认）
-- `off`：禁用
+- `manual`：同 auto，有注解也会转译，但语义上表示"偶尔使用"
+- `off`：禁用，含 `//@es6` 的脚本会报错提示
 
 ## 命令
 
