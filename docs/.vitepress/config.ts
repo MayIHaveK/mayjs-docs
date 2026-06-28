@@ -34,7 +34,8 @@ export default defineConfig({
           text: '核心概念',
           items: [
             { text: '脚本类型', link: '/guide/script-types' },
-            { text: '热重载', link: '/guide/hot-reload' }
+            { text: '热重载', link: '/guide/hot-reload' },
+            { text: 'ES6+ 转译', link: '/guide/transpile' }
           ]
         }
       ],
