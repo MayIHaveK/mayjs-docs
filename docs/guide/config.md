@@ -48,6 +48,9 @@ security:
       - "java.lang.Runtime"
       - "java.lang.ProcessBuilder"
       - "java.net.ServerSocket"
+
+# 脚本加密
+# 无需配置，使用 /mayjs encrypt <脚本> 命令加密即可
 ```
 
 ## 配置项说明
@@ -91,6 +94,24 @@ security:
 | `blacklist` | list | `[]` | 禁止 `Java.type()` 加载的类名列表 |
 
 启用沙箱后，脚本中调用 `Java.type("java.lang.Runtime")` 等被禁类会抛出异常。
+
+### encryption
+
+MayJS 支持脚本加密保护。
+
+::: tip 脚本加密
+| 扩展名 | 说明 |
+|--------|------|
+| `.js` | 普通脚本 |
+| `.mjs` | 加密脚本 |
+
+加密命令：
+```bash
+/mayjs encrypt my_script
+```
+
+加密后原文件保留，确认无误后手动删除。加密脚本运行方式与普通脚本一致，无性能损耗。
+:::
 
 ## auto-run-list.yml
 
