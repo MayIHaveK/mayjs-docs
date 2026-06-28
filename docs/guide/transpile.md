@@ -1,8 +1,8 @@
 # ES6+ 转译
 
-MayJS 内置 ES6+ 转译器，支持使用现代 JavaScript 语法编写脚本。
+MayJS 支持使用现代 JavaScript 语法编写脚本。
 
-## 快速开始
+## 使用方法
 
 在脚本头部添加 `//@es6` 注解：
 
@@ -40,13 +40,29 @@ function main() {}
 | 幂运算符 | `x ** 3` |
 
 ::: warning 不支持
-以下特性无法转译，请勿使用：
 - `async` / `await` / `Promise`
 - `import` / `export`（使用 `require` 代替）
 - Generator（`function*`）
-- `Symbol`
-- `Map` / `Set`（使用 `java.util.HashMap` 代替）
+- `Symbol`、`Map`、`Set`（使用 Java 集合代替）
 :::
+
+## 配置
+
+```yaml
+script-engine:
+  transpile: manual   # auto / manual / off
+```
+
+- `auto`：有 `//@es6` 注解的脚本自动转译运行
+- `manual`：仅通过命令手动转译（默认）
+- `off`：禁用
+
+## 命令
+
+```bash
+/mayjs compile <脚本名>              # 转译并覆盖原文件
+/mayjs compile <脚本名> -o <输出名>   # 转译到指定文件
+```
 
 ## 配置
 
