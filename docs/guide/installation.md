@@ -10,7 +10,15 @@
 
 1. 将 `MayJS.jar` 放入服务器 `plugins/` 目录
 
-2. （JDK 15+ 必须）同时放入 `NashornJs-1.1.3.jar`
+2. （JDK 15+ 必须）同时放入 NashornJS 插件
+   
+   根据你的服务端类型选择对应版本：
+
+   | 服务端类型 | NashornJS 版本 |
+   |-----------|---------------|
+   | Paper / Spigot / Purpur | `NashornJs-1.2.0-all.jar` |
+   | Mohist / CatServer / Forge 混合端 | `NashornJs-1.2.0-norelocate.jar` |
+
    > JDK 15 移除了内置 Nashorn 引擎，需要通过此插件补回。JDK 8-14 可跳过。
 
 3. （可选）放入 `PlaceholderAPI.jar` — 启用变量解析功能
@@ -35,7 +43,7 @@ plugins/MayJS/
 
 | 插件 | 用途 | 必须？ |
 |------|------|--------|
-| NashornJs | JDK 15+ 环境提供 Nashorn 引擎 | JDK 15+ 必须 |
+| NashornJs | JDK 15+ 环境提供 Nashorn 引擎（按服务端类型选版本） | JDK 15+ 必须 |
 | PlaceholderAPI | 变量解析与自定义变量注册 | 可选 |
 | ProtocolLib | 数据包操作（高级用法） | 可选 |
 
