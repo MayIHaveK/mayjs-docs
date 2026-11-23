@@ -1,142 +1,44 @@
-# 常见问题
+# 常见问题 (FAQ)
 
-## 安装问题
+## 引擎与环境
 
-### 启动报错 `NoClassDefFoundError: javax/script/ScriptEngine`
+### Q: 应该选 Nashorn 还是 GraalJS？
+- **Paper 1.20.5 / 1.21+（JDK 21+）**：强烈推荐同时安装 `MayJS.jar` 与伴生插件 `MayJS-GraalJS.jar`。原生支持 ECMAScript 2023+（无需 Node.js / Babel）、拥有更好的执行性能，并支持**语句配额与超时熔断保护**。
+- **Minecraft 1.7.10 – 1.20.4（JDK 8 – 17）**：安装 `MayJS.jar`（JDK 15+ 需搭配 `NashornJs-1.2.0-norelocate.jar`），主插件零冗余体积且完全兼容。
 
-你的 JDK 版本 ≥ 15，需要安装 `NashornJs` 插件。将 `NashornJs-1.1.3.jar` 放入 `plugins/` 目录即可。
+### Q: 装了 `MayJS-GraalJS.jar` 后还需要装 `NashornJs` 吗？
+**不需要**。在 `script-engine.engine: auto` 默认模式下，MayJS 启动期会自动通过 SPI 发现并激活 `graaljs` 引擎。仅当你需要为极少数旧脚本显式标注 `//@engine nashorn` 时才需要同时安装 `NashornJs`。
 
-### 启动后 `/mayjs` 命令无响应
+### Q: 怎么确认当前激活的是哪个引擎？
+在控制台或游戏内执行 `/mayjs engine`，即可查看配置模式、当前激活引擎、熔断限制及所有已注册引擎后端的能力状态。
 
-检查控制台是否有报错。常见原因：
-- 插件未成功启用（查看启动日志）
-- 权限不足：需要 `mayjs.use` 权限或 OP 身份
+---
 
-### 与 Mohist/Catserver 的兼容性
+## 脚本包与加密
 
-MayJS 兼容 Forge+Bukkit 混合端。如果遇到类加载问题，尝试在 `config.yml` 中启用跨插件 ClassLoader：
+### Q: `.mjsb` 和旧版 `.mjs` 有什么区别？
+- **`.mjs`** 适合单文件脚本加密。3.0 起默认升级为 **v2（AES-256-GCM 认证加密）**，同时 100% 向下兼容历史 v1（AES-256-CBC）文件。
+- **`.mjsb`** 是多文件工程化脚本包加密归档（包含 `script.yml`、入口脚本、`lib/` 子模块和默认 `config.yml`），同样采用 AES-256-GCM，并额外对头部元数据和可选授权头（`boundQq` / `expireAt`）施加 **AAD 防篡改认证**。
 
-```yaml
-js-engine:
-  classloader:
-    allow-cross-plugin: true
-```
+### Q: `.mjsb` 运行时会把解密后的脚本解压到硬盘吗？
+**绝对不会**。`.mjsb` 在运行期严格在内存中完成解密与 ZIP 解包，脚本代码永不落盘。只有默认 `config.yml` 会在 `plugins/MayJS/bundles/<id>/config.yml` 尚不存在时释放一次，供服主修改配置。
 
-## 脚本编写
+### Q: 为什么我的 `.mjsb` 提示 `Tag mismatch!`？
+说明 `.mjsb` 文件内容或头部元数据（如 `boundQq` / `expireAt`）被篡改，或打包密钥不匹配。请使用 `java -jar mayjs-cli.jar inspect <file.mjsb> --verify` 校验原始包完整性。
 
-### `Java.type` 找不到类
+---
 
-```javascript
-// ❌ 找不到其他插件的类
-var SomeClass = Java.type("com.otherplugin.SomeClass");
+## 安全与稳定性
 
-// ✅ 使用 reflect.importClass 跨插件加载
-var SomeClass = reflect.importClass("OtherPlugin", "com.otherplugin.SomeClass");
-```
+### Q: 脚本里不小心写了 `while (true) {}` 会卡死服务器吗？
+在 **GraalJS** 环境下，只需在 `config.yml` 中配置 `script-engine.execution-limit.max-statements`（建议 `500000`）和 `timeout-ms`（建议 `5000`），死循环会在数毫秒内被熔断中止并精确报出行号列号，同时 MayJS 会自动重建受损执行域并恢复同域上其他健康的 `@service` 与脚本包，不会拖垮 TPS。
 
-`Java.type()` 只能加载标准库和 Bukkit API。其他插件的类需要通过 `reflect.importClass()` 加载。
+### Q: 修改安全沙箱黑名单需要重启服务器吗？
+不需要。修改 `config.yml` 中的 `security.sandbox` 后执行 `/mayjs reload`，新的黑名单会立即同步到类加载器、反射服务与所有活跃引擎会话。
 
-### 监听器注册了但不触发
+---
 
-1. 确认事件类名是**全限定名**（包含包路径）
-2. 确认拼写正确（大小写敏感）
-3. 确认事件确实被触发了（某些事件需要特定条件）
-4. 检查控制台有无报错
+## 升级与兼容
 
-```javascript
-// ❌ 错误
-events.listen("PlayerJoinEvent", function(e) {});
-
-// ✅ 正确
-events.listen("org.bukkit.event.player.PlayerJoinEvent", function(e) {});
-```
-
-### `sender` 为 null
-
-`sender` 只在通过 `/mayjs run` 执行时注入。在服务脚本的 `onLoad()` 中 `sender` 不可用。
-
-如果需要在 `onLoad()` 中操作玩家，使用事件监听获取玩家对象。
-
-### require 路径报错
-
-`require()` 路径相对于 `plugins/MayJS/scripts/` 目录：
-
-```javascript
-// 文件位置: plugins/MayJS/scripts/libs/utils.js
-var utils = require("libs/utils.js");  // ✅
-
-// ❌ 不要用绝对路径
-var utils = require("plugins/MayJS/scripts/libs/utils.js");
-```
-
-### 中文乱码
-
-确保脚本文件以 **UTF-8** 编码保存。Windows 记事本默认可能是 GBK，建议用 VS Code 或其他现代编辑器。
-
-## 性能问题
-
-### 脚本执行变慢
-
-- 检查是否有死循环或过于频繁的定时任务
-- 开启调试日志确认缓存是否命中：
-  ```yaml
-  script-engine:
-    log-cache-hit: true
-  ```
-- 避免在 `PlayerMoveEvent` 等高频事件中执行复杂逻辑
-
-### 内存占用过高
-
-- 检查是否有大量数据存在内存存储中而未设置 TTL
-- 服务脚本中避免在全局变量中累积数据
-- 确认热重载后旧资源确实被清理（查看控制台日志）
-
-## 热重载
-
-### 修改文件后没有自动重载
-
-1. 确认 `config.yml` 中 `file-watcher: true`
-2. 确认文件在 `scripts/` 目录下（子目录也会监听）
-3. 某些编辑器（如 vim）使用"写入临时文件再重命名"的方式保存，可能不触发标准 WatchService 事件。尝试用其他编辑器或手动 `/mayjs reload-script`
-
-### 重载后命令/监听器重复
-
-正常情况下不会发生。如果出现：
-1. 确认脚本是 `//@service` 模式
-2. 确认资源是在 `onLoad()` 中注册的
-3. 尝试 `/mayjs reload-script` 手动重载
-
-## 沙箱
-
-### 如何阻止脚本执行系统命令？
-
-在 `config.yml` 中启用沙箱并将危险类加入黑名单：
-
-```yaml
-security:
-  sandbox:
-    enabled: true
-    blacklist:
-      - "java.lang.Runtime"
-      - "java.lang.ProcessBuilder"
-      - "java.io.File"
-      - "java.net.ServerSocket"
-```
-
-### 沙箱会影响性能吗？
-
-几乎不会。沙箱检查只在 `Java.type()` 调用时触发一次字符串匹配，不影响后续方法调用。
-
-## 加密
-
-### 如何加密脚本？
-
-`/mayjs encrypt 脚本名`，生成 `.mjs` 文件，原文件保留。
-
-### 加密会影响性能吗？
-
-不会。
-
-### 同时存在 .js 和 .mjs 会怎样？
-
-`.mjs` 优先加载。
+### Q: 2.x 写的老脚本在 3.0 能直接运行吗？
+**完全兼容**。所有内置全局变量（`server` / `events` / `commands` / `scheduler` / `papi` / `reflect` / `storage` / `require` / `print`）、`//@service` 与历史 v1 `.mjs` 文件均保持兼容；仅对个别旧式辅助方法标注了 `@Deprecated` 建议迁移。详见 [v2 → v3 迁移指南](/guide/migration-v2-to-v3)。

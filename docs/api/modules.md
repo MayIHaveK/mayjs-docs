@@ -65,17 +65,36 @@ log.info("启动成功");
 
 ## 路径解析
 
-`require()` 的路径相对于 `scripts/` 目录：
+### 散装脚本（相对于 `scripts/`）
+
+在普通脚本、服务脚本或模块脚本中，`require()` 的非相对路径默认相对于 `scripts/` 目录，支持省略 `.js` / `.mjs` 后缀：
 
 ```
 plugins/MayJS/scripts/
 ├── libs/
-│   ├── utils.js        ← require("libs/utils.js")
+│   ├── utils.js        ← require("libs/utils.js") 或 require("libs/utils")
 │   └── database.js     ← require("libs/database.js")
 ├── modules/
 │   └── shop.js         ← require("modules/shop.js")
 └── main.js
 ```
+
+### 脚本包内的相对路径（3.0 新增）
+
+在 [脚本包（目录包或 `.mjsb` 加密归档）](../guide/bundles) 内部，`require("./...")` 与 `require("../...")` 会**按当前脚本所在包内路径解析**，自动补全 `.js` / `.mjs`：
+
+```javascript
+// bundles/daily-reward/index.js
+const rewards = require("./rewards");         // 解析为包内 rewards.js / rewards.mjs
+const helper = require("./utils/format");     // 解析为包内 utils/format.js
+
+// bundles/daily-reward/utils/format.js
+const config = require("../rewards");         // 向上回退至包内 rewards.js
+```
+
+- 包内模块与 `.mjsb` 纯内存字节源完全打通，无需落盘即可直接 `require` 加密归档中的子模块。
+- 若路径不以 `./` 或 `../` 开头，仍会回退到全局 `scripts/` 共享库查找。
+- 越界遍历（如试图 `../../` 逃出包根目录）会被强制拦截。
 
 ## 模块缓存
 

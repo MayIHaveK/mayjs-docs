@@ -1,112 +1,33 @@
-# ES6+ 转译
+# ES6+ 语法与转译
 
-MayJS 支持使用现代 JavaScript 语法编写脚本。
+MayJS 3.0 根据当前引擎的能力自动采取最优方案：
 
-## 使用方法
+## 1. GraalJS 环境（推荐，免转译）
 
-在脚本头部添加 `//@es6` 注解：
+当你安装了配套插件 `MayJS-GraalJS.jar`（JDK 21+）时：
+- **原生支持 ECMAScript 2023+**：`const` / `let`、箭头函数、`class` 与私有字段、模板字符串、解构赋值、展开运算符、可选链 `?.`、空值合并 `??`、`Promise`、`Map`/`Set` 等开箱即用。
+- **无需 Node.js、无需 Babel**：即使脚本头部保留了兼容旧版的 `//@es6` 或 `//@modern` 注释，MayJS 也会自动识别引擎支持现代语法并直接跳过转译。
+
+## 2. Nashorn 环境（按需转译 / 预编译）
+
+在仅运行 Nashorn（JDK 8–17）的服务器上，若脚本使用了现代 ES6+ 语法，有两种方式：
+
+### 方式 A：服务端按需转译（`//@es6`）
+在脚本顶部注释区添加 `//@es6`（或 `//@modern`）：
 
 ```javascript
-//@service
 //@es6
-
-const REWARDS = ['§a100 金币', '§b经验药水', '§d钻石'];
-
-function onLoad() {
-    events.listen("org.bukkit.event.player.PlayerJoinEvent", (e) => {
-        const player = e.getPlayer();
-        const reward = REWARDS[Math.floor(Math.random() * REWARDS.length)];
-        player.sendMessage(`§6[奖励] §f${player.getName()} 获得了 ${reward}`);
-    });
+const greet = (name = 'Steve') => `Hello, ${name}!`;
+function main() {
+    print(greet(sender ? sender.getName() : 'Console'));
 }
-
-function main() {}
 ```
 
-## 支持的语法
+并在服务器本机安装 Node.js（或将便携版 Node 放入 `plugins/MayJS/runtime/`），确保 `config.yml` 中 `script-engine.transpile` 未设为 `off`。转译结果会随编译产物一起缓存，仅在文件修改后重新转译。
 
-| 语法 | 示例 |
-|------|------|
-| 箭头函数 | `(x) => x * 2` |
-| const / let | `const a = 1; let b = 2;` |
-| 模板字符串 | `` `hello ${name}` `` |
-| 解构赋值 | `const [a, b] = arr;` |
-| 默认参数 | `function f(x = 1) {}` |
-| class | `class Foo extends Bar {}` |
-| 对象简写 | `{ name, age }` |
-| 展开运算符 | `{...obj}` `[...arr]` |
-| for-of | `for (const item of list) {}` |
-| 计算属性 | `{ [key]: value }` |
-| 幂运算符 | `x ** 3` |
-| Optional chaining | `obj?.prop?.sub` |
-| Nullish coalescing | `val ?? default` |
-| 逻辑赋值 | `a ??= 1; b \|\|= 2;` |
-
-::: warning 不建议使用
-- `async` / `await` — 语法可转译但 Nashorn 无原生 Promise，运行时可能异常
-- `import` / `export`（使用 `require` 代替）
-- Generator（`function*`）— 同上，运行时可能异常
-- `Symbol`、`Map`、`Set`（使用 Java 集合代替）
-:::
-
-## 配置
-
-```yaml
-script-engine:
-  transpile: auto   # auto / manual / off
-```
-
-- `auto`：有 `//@es6` 注解的脚本自动转译运行
-- `manual`：同 auto，有注解也会转译，但语义上表示"偶尔使用"
-- `off`：禁用，含 `//@es6` 的脚本会报错提示
-
-## 命令
+### 方式 B：本地预编译（`mayjs-cli compile` 或 `/mayjs compile`）
+在开发机提前编译为纯 ES5 后再部署到生产服，生产服零 Node.js 依赖：
 
 ```bash
-/mayjs compile <脚本名>              # 转译并覆盖原文件
-/mayjs compile <脚本名> -o <输出名>   # 转译到指定文件
+java -jar mayjs-cli-3.0.0-SNAPSHOT.jar compile ./src/shop.js -o ./dist/shop.js
 ```
-
-## 配置
-
-```yaml
-script-engine:
-  # auto: 有 //@es6 注解的脚本自动转译
-  # manual: 仅通过命令手动转译（默认，不影响启动速度）
-  # off: 禁用
-  transpile: manual
-```
-
-## 命令
-
-```bash
-/mayjs compile <脚本名>              # 转译并覆盖原文件
-/mayjs compile <脚本名> -o <输出名>   # 转译到指定文件
-```
-
-## 两种工作流
-
-### 自动模式
-
-设置 `transpile: auto`，脚本带 `//@es6` 注解即自动转译运行：
-
-```
-scripts/my-service.js （ES6+ 源码，带 //@es6）
-        ↓ 自动转译
-      Nashorn 执行
-```
-
-### 手动模式
-
-保持默认 `transpile: manual`，开发时手动编译：
-
-```
-scripts/src/my-service.js （ES6+ 源码）
-        ↓ /mayjs compile src/my-service -o my-service
-scripts/my-service.js （ES5 输出，MayJS 加载）
-```
-
-::: tip 选择建议
-- 脚本数量少、开发频繁 → `auto` 更方便
-- 正式环境、追求启动速度 → `manual` 预先编译好
-:::

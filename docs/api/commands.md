@@ -71,7 +71,8 @@ commands.dispatch(sender, "spawn");
 | `args` | String[] | 命令参数数组 |
 
 ::: warning 注意
-动态注册的命令不会出现在 `/help` 列表中，但 Tab 补全正常工作。这是 Bukkit 动态命令的已知限制。
+- 动态注册的命令不会出现在 `/help` 列表中，但 Tab 补全正常工作。这是 Bukkit 动态命令的已知限制。
+- 旧版底层入口 `commands.getFactory()` 在 MayJS 3.0 中已标记 `@Deprecated`，请统一使用 `commands.register(...)` / `commands.unregister(...)` 以确保卸载与热重载时自动追踪释放。
 :::
 
 ## 完整示例

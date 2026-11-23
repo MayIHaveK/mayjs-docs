@@ -16,7 +16,7 @@ var SomeClass = reflect.importClass("PluginName", "com.example.SomeClass");
 var SomeClass = reflect.importClass(null, "com.example.SomeClass");
 ```
 
-### Nashorn 原生方式
+### `Java.type()` 原生方式（Nashorn & GraalJS 通用）
 
 ```javascript
 // 标准库和 Bukkit API 可直接使用
@@ -24,8 +24,12 @@ var HashMap = Java.type("java.util.HashMap");
 var Material = Java.type("org.bukkit.Material");
 ```
 
-::: tip 何时用 reflect.importClass？
-`Java.type()` 只能加载 MayJS 自身 ClassLoader 可见的类。访问其他插件的类需要用 `reflect.importClass("插件名", "类全名")`。
+::: tip Java.type()、reflect.importClass() 与混合端/沙箱的关系
+- 在 MayJS 3.0 中，无论 Nashorn 还是 GraalJS，`Java.type()` 底层均挂接了统一的 `CompositePluginClassLoader`，可直接访问标准库、Bukkit API、**其他已启用插件的类**以及**混合端（Forge / NeoForge / Arclight / Mohist / Youer 等）的服务端与 Mod 类**。
+- 当两个插件 shade 了同名类、或希望显式锁定从某个指定插件加载类时，使用 `reflect.importClass("插件名", "类全名")`。
+- `reflect.newInstance(...)`、`reflect.implement(...)` 与 `reflect.getFastReflection()` 均支持直接传入类名字符串、`Class` 对象以及 Nashorn / GraalJS 的 `Java.type(...)` 结果；访问私有/受保护成员（如 NMS 或 Mod 内部字段）请使用 `FastReflection`。
+- 无论 `Java.type()` 还是 `reflect.importClass()` 均受 `config.yml` 中 `security.sandbox` 的实时黑名单约束；GraalJS 引擎还会将其直接绑定到底层 `HostAccess` 类访问过滤器。详见 [多引擎与沙箱配置](../guide/engines)。
+- `reflect.implement(...)` 同时兼容 Nashorn `JSObject` 与 GraalJS Polyglot 函数/对象。
 :::
 
 ## 创建实例

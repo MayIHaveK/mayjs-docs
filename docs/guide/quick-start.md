@@ -1,97 +1,86 @@
 # 快速开始
 
-## 你的第一个脚本
+本节带你用 3 分钟分别体验 MayJS 3.0 的**单文件脚本**与**工程化脚本包**。
 
-在 `plugins/MayJS/scripts/` 下创建 `hello.js`：
+## 1. 第一个单文件脚本
+
+在 `plugins/MayJS/scripts/` 下新建 `hello.js`：
 
 ```javascript
 function main() {
-    sender.sendMessage("§a你好，" + sender.getName() + "！");
-    sender.sendMessage("§7参数: " + args);
-    return "执行成功";
+    var who = sender ? sender.getName() : "Console";
+    var extra = args.size() > 0 ? args.get(0) : "MayJS 3.0";
+    print("Hello " + who + ", welcome to " + extra + "!");
+    if (sender) {
+        sender.sendMessage("§a你好 " + who + "，当前运行在 MayJS 3.0！");
+    }
 }
 ```
 
-在游戏或控制台中输入：
+在控制台或游戏内执行：
 
+```text
+/mayjs run hello World
 ```
-/mayjs run hello
-/mayjs run hello 参数1 参数2
-```
 
-::: tip 说明
-- `sender` — 执行命令的玩家或控制台
-- `args` — 参数列表（Java List）
-- `main()` 的返回值会显示在控制台
-- 脚本名不需要写 `.js` 后缀
-:::
+## 2. 第一个常驻服务脚本（含自动清理）
 
-## 命令一览
-
-| 命令 | 说明 |
-|------|------|
-| `/mayjs run <脚本名> [参数...]` | 执行脚本 |
-| `/mayjs reload-script` | 重载全部脚本（服务脚本重新加载） |
-| `/mayjs reload-script <脚本名>` | 重载指定脚本 |
-
-脚本名支持子目录，如 `/mayjs run tools/backup`。
-
-## 全局变量
-
-脚本中可以直接使用以下变量，无需 import：
-
-| 变量 | 说明 |
-|------|------|
-| `sender` | 命令发送者 |
-| `args` | 参数列表 |
-| `server` | 玩家/广播服务 |
-| `events` | 事件监听 |
-| `commands` | 动态命令注册 |
-| `scheduler` | 任务调度 |
-| `storage` | 数据存储 |
-| `papi` | PlaceholderAPI |
-| `reflect` | 反射工具 |
-| `require` | 模块加载 |
-| `print` | 控制台输出 |
-
-完整 API 说明见 [API 参考](/api/overview)。
-
-## 两种脚本类型
-
-MayJS 有两种脚本类型，选择很简单：
-
-- **普通脚本** — 一次性执行，用 `main()` 入口
-- **服务脚本** — 长期驻留，用 `onLoad()`/`onUnload()` 管理生命周期
-
-详细说明见 [脚本类型](./script-types)。
-
-## 快速示例：服务脚本
-
-创建 `plugins/MayJS/scripts/welcome.js`：
+在 `plugins/MayJS/scripts/` 下新建 `welcome.js`：
 
 ```javascript
 //@service
-
 function onLoad() {
-    events.listen("org.bukkit.event.player.PlayerJoinEvent", function(e) {
-        e.getPlayer().sendMessage("§a欢迎回来！");
+    events.listen("org.bukkit.event.player.PlayerJoinEvent", function (event) {
+        var player = event.getPlayer();
+        player.sendMessage("§b欢迎来到服务器，" + player.getName() + "！");
     });
 
-    print("[welcome] 服务已启动");
-}
+    commands.register("hello", function (sender) {
+        sender.sendMessage("§a来自 welcome.js 服务脚本的问候！");
+        return true;
+    });
 
-function onUnload() {
-    print("[welcome] 服务已停止");
+    // 自定义清理钩子：热重载或 /mayjs unload 时自动触发
+    onDispose(function () {
+        print("welcome.js 已完成自定义资源清理");
+    });
 }
 ```
 
-这个脚本会：
-1. 服务器启动 / 脚本重载时自动执行 `onLoad()`
-2. 监听玩家加入事件，发送欢迎消息
-3. 重载时自动清理旧监听器，再重新注册
+保存文件后，文件监听器会自动加载 `welcome.js` 并执行 `onLoad()`。你可以随时使用以下运维命令管理它：
 
-## 下一步
+```text
+/mayjs list                  # 查看所有已加载脚本与脚本包
+/mayjs info welcome          # 查看监听器、命令、PAPI 与任务追踪计数
+/mayjs reload-script welcome # 热重载（自动注销旧监听器/命令并触发 onDispose）
+/mayjs unload welcome        # 彻底卸载并释放资源
+```
 
-- [配置文件](./config) — 了解完整配置项
-- [脚本类型](./script-types) — 深入了解两种脚本模式
-- [API 参考](/api/overview) — 查看所有可用接口
+## 3. 使用 GraalJS 原生编写 ES2023+
+
+若服务器已安装 `MayJS-GraalJS.jar`（JDK 21+），无需任何转译配置即可直接编写现代 JavaScript：
+
+```javascript
+//@service
+class WelcomeCounter {
+    #count = 0;
+    next(name) {
+        this.#count++;
+        return `§a第 ${this.#count} 位到访玩家：${name ?? '匿名访客'}`;
+    }
+}
+
+const counter = new WelcomeCounter();
+
+function onLoad() {
+    events.listen("org.bukkit.event.player.PlayerJoinEvent", (e) => {
+        server.broadcast(counter.next(e.getPlayer()?.getName()));
+    });
+}
+```
+
+## 4. 下一步
+
+- 多文件项目与商业分发？阅读 [脚本包 (.mjsb) 与授权头](/guide/bundles)
+- 想要 VS Code 自动补全？阅读 [CLI 工具链与 IDE 补全](/guide/cli-and-ide)
+- 查看所有内置能力？阅读 [API 总览](/api/overview)

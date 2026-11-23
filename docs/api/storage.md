@@ -2,6 +2,10 @@
 
 MayJS 提供两套存储：**内存存储**（重启清空）和**持久化存储**（SQLite，跨重启）。
 
+::: tip 3.0 脚本包命名空间隔离
+在 [脚本包（Bundle）](../guide/bundles) 中开发时，优先使用 [`bundle.storage`](./bundle#bundle-storage)，它会自动为所有键加上 `bundle:<id>:` 前缀，彻底避免与其他脚本或脚本包键名冲突。
+:::
+
 ## 内存存储
 
 ### 全局存储
@@ -61,11 +65,17 @@ storage.player(sender).set("buff", "active", 300);
 
 ## 持久化存储
 
-数据保存在 SQLite 数据库中，服务器重启后依然存在。
+数据保存在 SQLite 数据库中，服务器重启后依然存在。SQLite JDBC 是可选运行时模块；
+若服务端环境没有提供 `org.sqlite.JDBC`，MayJS 会保留全部内存存储功能并跳过持久化模块，
+不会因此阻止插件启动。
 
 ```javascript
-var db = storage.getPersist();
+if (storage.isPersistentAvailable()) {
+    var db = storage.getPersist();
+}
 ```
+
+SQLite 不可用时直接调用 `getPersist()` 会抛出带安装提示的异常。
 
 ### 全局持久化
 
@@ -87,6 +97,34 @@ db.player(sender).get("coins", 0);
 db.player(sender).has("coins");
 db.player(sender).remove("coins");
 ```
+
+### 异步持久化
+
+持久化存储提供与同步 API 对应的异步方法，数据库操作会在 MayJS 专用的单线程执行器中有序执行：
+
+```javascript
+db.setAsync("key", "value");
+db.setAsync("key", "value", 3600);
+var valueFuture = db.getAsync("key");
+db.hasAsync("key");
+db.removeAsync("key");
+db.clearAsync();
+
+var playerDb = db.player(sender);
+var coinsFuture = playerDb.getAsync("coins", 0);
+
+storage.whenCompleteInScript(coinsFuture, function (coins, error) {
+    if (error != null) {
+        print("读取失败: " + error.getMessage());
+        return;
+    }
+    print("coins=" + coins);
+});
+```
+
+这些方法返回 `CompletableFuture`。脚本侧不要通过 `then*` 直接执行 JS，应使用
+`storage.whenCompleteInScript(future, callback)` 回到所属脚本执行域。回调仍可能位于数据库
+工作线程；需要操作世界、实体或玩家状态时，还应通过调度器切回 Bukkit 主线程。
 
 ## 存储什么数据类型？
 

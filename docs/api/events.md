@@ -20,17 +20,17 @@ events.listen("org.bukkit.event.player.PlayerJoinEvent", "HIGH", function(e) {
 
 可用优先级：`LOWEST` → `LOW` → `NORMAL` → `HIGH` → `HIGHEST` → `MONITOR`
 
-## 指定名称
+## 指定名称（旧版兼容）
+
+::: warning 3.0 废弃提示
+`events.createListener(...)` 在 MayJS 3.0 中已标记 `@Deprecated`。由于 `events.listen(...)` 已默认由脚本上下文自动追踪并在卸载/重载时注销，新脚本推荐直接使用 `events.listen(...)`；如有自定义外部资源需要释放，可配合全局 [`onDispose(fn)`](./overview#全局函数)。
+:::
 
 ```javascript
 events.createListener("my_join_listener", "org.bukkit.event.player.PlayerJoinEvent", "NORMAL", function(e) {
     e.getPlayer().sendMessage("§a欢迎！");
 });
 ```
-
-指定名称的好处：
-- 热重载时自动替换同名监听器（不会重复注册）
-- 日志中更容易识别
 
 ## 事件类名
 

@@ -17,3 +17,4 @@
 | [自定义事件](./custom-events) | 跨脚本 | 脚本间事件通信 |
 | [PAPI 变量](./papi-variables) | 服务脚本 | 注册 PlaceholderAPI 变量 |
 | [持久化数据](./persistent-data) | 普通脚本 | SQLite 数据读写 |
+| [每日签到脚本包](./bundle-daily-reward) | 脚本包（3.0） | 目录包 / `.mjsb` + `bundle.storage` + `onDispose` + ES2023+ |
