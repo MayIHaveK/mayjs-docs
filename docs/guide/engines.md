@@ -15,6 +15,12 @@ MayJS 3.0 通过 `mayjs-api` 中的 `JsEngineBackend` / `JsEngineSession` SPI �
 | 死循环熔断 | 不支持 | **支持语句数配额 + 超时看门狗 + 熔断后同域服务自动自愈** |
 | Nashorn 语法兼容 | 原生 | 已开启 `js.nashorn-compat`，支持 `Java.type` / `Packages` |
 
+::: tip 独立运行模式（可供 MayDungeon 等插件单独使用）
+`MayJS-GraalJS.jar` 声明为 `softdepend: [MayJS]`，且将 MayJS 3.0 API 桥接做了类加载隔离：
+- **同时安装 MayJS 3.0+**：自动接入 MayJS 多引擎平台，并同时可供 `MayDungeon` 等生态插件调用；
+- **未安装 MayJS（或仍为旧版 MayJS 2.x）**：`MayJS-GraalJS` 会保持启用并以独立 GraalJS 24.2.2 运行时模式工作，只使用 `MayDungeon` 的服主无需安装 `MayJS`。
+:::
+
 ## 2. 引擎路由优先级
 
 MayJS 按以下顺序为每个脚本或脚本包选择执行引擎：
